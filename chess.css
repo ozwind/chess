@@ -1,0 +1,247 @@
+body {
+    background-color: black;
+}
+
+img {
+    width: 100px;
+}
+
+.allowMove {
+    cursor: move;
+}
+
+#main {
+    display: flex;
+}
+
+#chess-board {
+    display: flex;
+    flex-wrap: wrap;
+    width: 800px;
+    height: 800px;
+    min-width: 800px;
+    min-height: 800px;
+    background-color: white;
+}
+
+.square {
+    width: 100px;
+    height: 100px;
+}
+
+.off-white {
+    background-color: #faebd7;
+}
+
+.grid-item {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 1px solid #000; /* Add border for visibility */
+    box-sizing: border-box; /* Ensure border is included in the element's size */
+}
+
+.info {
+    position: absolute;
+    width: 92px;
+    height: 96px;
+    padding: 2px;
+    font-size: small;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.showInfo {
+    z-index: 999;
+    display: inline-block !important;
+}
+
+.info span:not(:empty) {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.infoB {
+    background-color: black;
+    color: white;
+    position: relative;
+    opacity: 0.6;
+    display: none;
+}
+
+.infoT {
+    background-color: orangered;
+    color: white;
+    position: relative;
+    opacity: 0.7;
+    display: none;
+}
+
+.infoW {
+    background-color: white;
+    color: black;
+    position: relative;
+    opacity: 0.8;
+    display: none;
+}
+
+.highlight {
+    background-color: lightblue;
+}
+
+.hover {
+    background-color: lightgreen;
+}
+
+.active, .discardPile.active {
+    border: 3px solid green;
+}
+
+button {
+    margin-left: 2px;
+    margin-bottom: 10px;
+    margin-right: 14px;
+    background-color: darkslategray;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: x-large;
+    line-height: 1;
+}
+
+button:disabled, button:hover:disabled {
+    background-color: gray;
+    cursor: default;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+.discardPile {
+    min-height: 50px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.discardPile img {
+    width: 50px;
+}
+
+#discardWhite {
+    background-color: azure;
+}
+
+#discardBlack {
+    background-color: gainsboro;
+}
+
+#container {
+    display: flex;
+}
+
+#header {
+    margin-left: 12px;
+    display: flex;
+    justify-content: space-between;
+    width: 800px;
+}
+
+#controls {
+    display: flex;
+}
+
+#version {
+    color: gray;
+}
+
+#rowLabels {
+    width: 12px;
+    margin-top: 3px;
+    color: white;
+}
+
+.rowLabel {
+    height: 100px;
+    line-height: 100px;
+}
+
+#colLabels {
+    display: flex;
+    margin-left: 13px;
+}
+
+.colLabel {
+    width: 100px;
+    text-align: center;
+    color: white;
+}
+
+#rightSide {
+    margin-left: 8px;
+    width: 820px;
+    height: 800px;
+    display: flex;
+    flex-direction: column;
+    background-color: black;
+}
+
+.checkmate {
+    font-weight: bold;
+    color: yellow;
+}
+
+#infoDialog {
+    display: none;
+    overflow-y: auto;
+}
+
+#infoDialog p {
+    white-space: pre-line;
+    margin-top: -.5em;
+}
+
+#promoteDialog img:hover {
+    background-color: lightgreen;
+    cursor: pointer;
+}
+
+button.arrow:focus {
+    outline: none;
+}
+
+/* Table */
+#tableContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+tr {
+    height: auto; /* Let rows maintain their natural height */
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    color: white;
+}
+
+th {
+    text-align: left;
+    background-color: black;
+}
+
+th:first-child {
+    width: 30px;
+}
+
+thead th:nth-child(2), thead th:nth-child(3) {
+    width: calc((820px - 30px) / 2);
+}
+/* Table end */

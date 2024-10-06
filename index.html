@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- https://www.favicon.cc/ -->
+    <link rel="shortcut icon" type="image/x-icon" href="icons/chess.ico">
+    <meta charset="utf-8">
+    <title>Chess Trainer</title>
+
+    <link rel="stylesheet" href="chess.css">
+    <link rel="stylesheet" href="sliders.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- drag/drop -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <script src="dialogs.js"></script>
+    <script src="chess.js"></script>
+    <script>
+        $(function() {
+            init();
+        });
+
+    </script>
+
+</head>
+
+<body>
+    <div id="header">
+        <div id="controls">
+            <button id="save" title="Save starting positions and moves in .chs file">&#x1F5AB;</button>
+            <button id="load" title="Load .fen, .pgn, or .chs chess file">&#x1F5C0;</button>
+            <button id="info" title="Chess Trainer information">&#x1F6C8;</button>
+            <button id="rewind" title="Rewind to start">&#x23EE;</button>
+            <button id="undo" title="Back out last move">&#x0003C;</button>
+            <button id="redo" title="Next move">&#x0003E;</button>
+            <button id="fastForward" title="Fast forward to end">&#x23ED;</button>
+            <div id="validMoves">
+                <label class="switch" title="Only valid moves on/off">
+                    <input type="checkbox" id="cbValid" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        <div id="version">2024-Oct-06</div>
+    </div>
+    <div id="main">
+        <div id="container">
+            <div id="rowLabels"></div>
+            <div id="chess-board"></div>
+            <div id="chess-info"></div>
+            <div id="grid"></div>
+        </div>
+        <div id="rightSide">
+            <div id="discardWhite" class="discardPile holder" title="White piece discard pile"></div>
+            <div id="tableContainer">
+                <table>
+                    <thead>
+                        <tr><th></th><th>White</th><th>Black</th></tr>
+                    </thead>
+                    <tbody id="moves"></tbody>
+                </table>
+            </div>
+            <div id="discardBlack" class="discardPile holder" title="Black piece discard pile"></div>
+        </div>
+    </div>
+    <div id="colLabels"></div>
+    <div id="tmpHolder"></div>
+    <div id="infoDialog"></div>
+    <div id="promoteDialog"></div>
+</body>
+
+</html>
