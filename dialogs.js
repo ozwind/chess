@@ -33,15 +33,15 @@ Light blue highlight: legal squares that the hover piece may move to.
 `;
 
 const promoteWhite = `
-<img src="icons/white Q.png" value="q">
-<img src="icons/white R.png" value="r">
-<img src="icons/white B.png" value="b">
-<img src="icons/white N.png" value="n">
+<img src="icons/whiteQ.png" value="q">
+<img src="icons/whiteR.png" value="r">
+<img src="icons/whiteB.png" value="b">
+<img src="icons/whiteN.png" value="n">
 `;
 
 const promoteBlack = `
-<img src="icons/black Q.png" value="Q">
-<img src="icons/black R.png" value="R">
-<img src="icons/black B.png" value="B">
-<img src="icons/black N.png" value="N">
+<img src="icons/blackQ.png" value="Q">
+<img src="icons/blackR.png" value="R">
+<img src="icons/blackB.png" value="B">
+<img src="icons/blackN.png" value="N">
 `;
