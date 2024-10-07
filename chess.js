@@ -393,7 +393,7 @@ function addNewPiece($container, val) {
 }
 
 function updatePiece(image, val) {
-    let color = val === val.toUpperCase() ? 'Black' : 'white';    
+    let color = val === val.toUpperCase() ? 'black' : 'white';    
 
     image.setAttribute('src', 'icons/' + color + val.toUpperCase() + '.png');
     image.setAttribute('value', val);
