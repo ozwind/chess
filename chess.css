@@ -108,6 +108,7 @@ button {
     border-radius: 5px;
     cursor: pointer;
     font-size: x-large;
+    font-family: Segoe UI Symbol, Arial, sans-serif;
     line-height: 1;
 }
 
@@ -118,6 +119,10 @@ button:disabled, button:hover:disabled {
 
 button:hover {
     background-color: #3e8e41;
+}
+
+#rewind, #undo, #redo, #fastForward {
+    display: flex;
 }
 
 .discardPile {
