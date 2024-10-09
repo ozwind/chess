@@ -103,6 +103,8 @@ function init() {
     $(LOGOUT).click(function() {
         fbUserLogout();
         $(LOGGEDINUSER).text("");
+        fbShowButton(STOP, false);
+        session = {};
     });
 
     $(STOP).click(function() {
