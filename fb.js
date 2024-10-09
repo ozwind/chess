@@ -171,6 +171,7 @@ function fbShowLoginDialog() {
     }
 
     $dlgLogin.dialog('open');
+    validateLoginOkButton();
 }
 
 function fbShowJoinDialog(data) {
