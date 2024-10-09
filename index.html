@@ -11,9 +11,14 @@
     <link rel="stylesheet" href="sliders.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
     <!-- drag/drop -->
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     <script src="dialogs.js"></script>
+    <script src="fb.js"></script>
     <script src="chess.js"></script>
     <script>
         $(function() {
@@ -29,6 +34,10 @@
         <div id="controls">
             <button id="save" title="Save starting positions and moves in .chs file">&#x1F5AB;</button>
             <button id="load" title="Load .fen, .pgn, or .chs chess file">&#x1F5C0;</button>
+            <button id="clear" title="Clear moves">&#x27F3;</button>
+            <button id="btnLogin" title="Login" class="hide">&#x2386;</button>
+            <button id="btnLogout" title="Logout" class="hide">&#xF2F5;</button>
+            <button id="btnStop" title="End session" class="hide">&#128721;</button>
             <button id="info" title="Chess Trainer information">&#x1F6C8;</button>
             <button id="rewind" title="Rewind to start">&#x23EE;</button>
             <button id="undo" title="Back out last move">&#x0003C;</button>
@@ -41,7 +50,10 @@
                 </label>
             </div>
         </div>
-        <div id="version">2024-Oct-06</div>
+        <div>
+            <div id="version">2024-Oct-09</div>
+            <div id="loggedInUser"></div>
+        </div>
     </div>
     <div id="main">
         <div id="container">
@@ -67,6 +79,22 @@
     <div id="tmpHolder"></div>
     <div id="infoDialog"></div>
     <div id="promoteDialog"></div>
+    <div id="chatting" class="hide">
+        <div id="chatArea"></div>
+        <input id="chatSend">
+    </div>
+    <div id="dlgLogin">
+        <label for="handle">Handle:</label>
+        <input type="text" name="handle" id="handle" class="login-input" required>
+        <label for="email">Email address:</label>
+        <input type="email" name="email" id="email" class="login-input" autocomplete="username" required>
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" class="login-input" autocomplete="current-password" required>
+    </div>
+    <div id="dlgJoin">
+        <p id="msgJoin"></p>
+    </div>
+
 </body>
 
 </html>

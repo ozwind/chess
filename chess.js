@@ -48,10 +48,12 @@
                  Provide ability to promote pawn to queen, rook, bishop, or knight.
                  Load PGN files.  Promotion is currently not supported.
     2024-Oct-06: Add rewind and fast forward buttons.
+    2024-Oct-09: Connect with other users, chat, login/out, clear moves button
 **/
 
 const SIZE = 8;    // Chessboard rows and columns
 const VALID = "#cbValid";
+const CLEAR = "#clear";
 const UNDO = "#undo";
 const REDO = "#redo";
 const REWIND = "#rewind";
@@ -60,17 +62,27 @@ const INFO = "#infoDialog";
 const CHESS_INFO = "#chess-info";
 const PROMOTE = "#promoteDialog";
 const ANIM_DEBOUNCE_MS = 300;  // milliseconds move animation and button debounce
+const LOGIN = "#btnLogin";
+const LOGOUT = "#btnLogout";
+const LOGGEDINUSER = "#loggedInUser";
+const CHATTING = "#chatting";
+const CHAT_AREA = "#chatArea";
+const CHAT_SEND = "#chatSend";
+
 let debounceTimer;
 let fenStatus = {}; // used when FEN file is loaded to remember castle and en passant
 let starting = {};  // starting position of all pieces on chessboard and discard piles
 let moveList = [];
 let moveRedo = [];
+let session = {};
 
 function init() {
     initBoard();
     initLabels();
     loadGrid(initGrid());
     initDialogs();
+    fbInit({online, loggedIn, userState, receiveMessage});
+
 
     $("#save").on('click', function() {
         save();
@@ -78,6 +90,23 @@ function init() {
 
     $("#load").on('click', function() {
         load();
+    });
+
+    $(CLEAR).on('click', function() {
+        clear();
+    });
+
+    $(LOGIN).click(function() {
+        fbShowLoginDialog();
+    });
+
+    $(LOGOUT).click(function() {
+        fbUserLogout();
+        $(LOGGEDINUSER).text("");
+    });
+
+    $(STOP).click(function() {
+        stopSession();
     });
 
     $("#info").on('click', function() {
@@ -101,12 +130,200 @@ function init() {
     });
 
     $(VALID).on('click', function() {
-        validMoves();
+        clickValidMoves();
     });
 
     $(document).keydown(function(event) {
         keydown(event);
     });
+
+    $(CHAT_SEND).on('keydown', function(event) {
+        chatSend(event);
+    });
+    
+    $(CHAT_AREA).on('click', '.usrHandle', function() {
+        requestJoin($(this).text());
+    });
+}
+
+function stopSession() {
+    fbShowButton(STOP, false);
+    fbSendPeer(TYPE_SESSION_END, session.handle);
+    session = {};
+}
+
+function chatSend(event) {
+    if (event.keyCode === 13) {
+        let $send = $(CHAT_SEND);
+        let val = $send.val();
+        if (val.length > 0) {
+            fbSend(val);
+            $send.val("");
+        }
+    }
+}
+
+function requestJoin(toHandle) {
+    let usr = fbGetUserStore();
+    let handle = usr ? usr.handle : "";
+    let keys = Object.keys(fbUserMap);
+
+    for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
+        let entry = fbUserMap[key];
+        if (toHandle === entry.handle) {
+            if (entry.online) {
+                let type = TYPE_JOIN;
+                let msg = handle + " invites you to join";
+                let cmd = {type, msg, handle};
+                let json = JSON.stringify(cmd);
+                let confirmed = confirm("Invite " + toHandle + " to join?");
+                if (confirmed) {
+                    fbSend(json, toHandle, true);
+                }
+            }
+            else {
+                alert(toHandle + " is offline");
+            }
+            break;
+        }
+    }
+}
+
+function online(map) {
+    let usr = fbGetUserStore();
+    let email = usr ? usr.email : "";
+    let keys = Object.keys(map);
+
+    for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
+        let entry = map[key];
+
+        if (email !== key && entry.changed) {
+            let msg = entry.online ? "on-line" : "off-line";
+            addMessage(false, entry.handle, msg);
+            if (!entry.online && entry.handle === session.handle) {
+                fbShowButton(STOP, false);
+                session = {};
+                alert(entry.handle + " has gone off-line.  Ending session.");
+            }
+        }
+    }
+}
+
+function loggedIn(user) {
+    let text = user ? user.handle + " (" + user.email + ")" : "";
+    $(LOGGEDINUSER).text(text);
+}
+
+function userState(user) {
+    if (user) {
+        fbShowButton(LOGIN, false);
+        fbShowButton(LOGOUT, true);
+        $(CHATTING).removeClass("hide");
+    }
+    else {
+        fbShowButton(LOGIN, true);
+        fbShowButton(LOGOUT, false);
+        $(CHATTING).addClass("hide");
+    }
+}
+
+function receiveMessage(data) {
+    if (data.isJson && data.toHandle) {
+        let usr = fbGetUserStore();
+        let handle = usr ? usr.handle : "";
+        if (data.handle !== handle && data.toHandle === handle) {
+            let cmd = JSON.parse(data.text);
+            if (TYPE_JOIN === cmd.type) {
+                fbShowJoinDialog(cmd);
+            }
+            else if (TYPE_MOVE === cmd.type) {
+                let move = JSON.parse(cmd.payload);
+                remoteMove(move);
+            }
+            else if (TYPE_UNDO === cmd.type) {
+                undo();
+            }
+            else if (TYPE_REDO === cmd.type) {
+                redo();
+            }
+            else if (TYPE_REWIND === cmd.type) {
+                rewind();
+            }
+            else if (TYPE_FF === cmd.type) {
+                fastForward();
+            }
+            else if (TYPE_CLEAR === cmd.type) {
+                doClear();
+            }
+            else if (TYPE_VM_SLIDER === cmd.type) {
+                remoteSlider();
+            }
+            else if (TYPE_LOAD === cmd.type) {
+                let obj = JSON.parse(cmd.payload);
+                doLoad(obj.filename, obj.fileText);
+            }
+            else if (TYPE_ACCEPT === cmd.type) {
+                session.handle = data.handle;
+                fbShowButton(STOP, true);
+            }
+            else if (TYPE_DECLINE === cmd.type) {
+                alert(data.handle + " declined");
+            }
+            else if (TYPE_SESSION_END === cmd.type) {
+                fbShowButton(STOP, false);
+                alert(data.handle + " ended session");
+                session = {};
+            }
+        }
+    }
+    else {
+        addMessage(sender === data.sender, data.handle, data.text);
+    }
+}
+
+function remoteSlider() {
+    let $cb = $(VALID);
+    $cb.prop('checked', !$cb.prop('checked'));
+    validMoves();
+}
+
+function remoteMove(move) {
+    applyMove(move);
+    moveList.push(move);
+    tableMsg(move);
+    updateButtonState();
+    cellInfoUpdate();
+}
+
+function addMessage(me, handle, text) {
+    let bold = me ? ['<b>','</b>'] : ['',''];
+    let cls = me ? "" : "usrHandle";
+    let msg = bold[0] + "[<div class='" + cls + "'>" + handle + "</div>]&nbsp;" + bold[1] + text;
+    let $text = $(CHAT_AREA);
+    let $div = $("<div class='msgEntry'>");
+    $div.html(msg);
+    $text.append($div);
+}
+
+function clear() {
+    doClear();
+
+    if (session.handle) {
+        fbSendPeer(TYPE_CLEAR, session.handle);
+    }
+}
+
+function doClear() {
+    starting = initStarting();
+    loadGrid(starting);
+    setValidMoves(true);
+    moveList.length = 0;
+    moveRedo.length = 0;
+    setDefaultTitle();
+    updateButtonState();
+    cellInfoUpdate();
 }
 
 function keydown(event) {
@@ -144,6 +361,20 @@ function debounce(func) {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function() {
         func();
+        if (session.handle) {
+            if (undo === func) {
+                fbSendPeer(TYPE_UNDO, session.handle);
+            }
+            else if (redo === func) {
+                fbSendPeer(TYPE_REDO, session.handle);
+            }
+            else if (rewind === func) {
+                fbSendPeer(TYPE_REWIND, session.handle);
+            }
+            else if (fastForward === func) {
+                fbSendPeer(TYPE_FF, session.handle);
+            }
+        }
     }, ANIM_DEBOUNCE_MS);
 }
 
@@ -429,18 +660,10 @@ function load() {  // Show file chooser dialog, which allows loading a chess fil
         reader.onload = function (e) {
             var fileText = e.target.result;
             try {
-                setDefaultTitle();
-                if (filename.endsWith('.chs')) {
-                    loadChs(filename, fileText);
-                }
-                else if (filename.endsWith('.fen')) {
-                    loadFen(filename, fileText);
-                }
-                else if (filename.endsWith('.pgn')) {
-                    loadPgn(filename, fileText);
-                }
-                else {
-                    alert("Unsupported file type " + filename);
+                doLoad(filename, fileText);
+                if (session.handle) {
+                    let payload = JSON.stringify({filename, fileText});
+                    fbSendPeer(TYPE_LOAD, session.handle, payload);
                 }
             }
             catch (error) {
@@ -454,6 +677,22 @@ function load() {  // Show file chooser dialog, which allows loading a chess fil
     });
 
     input.trigger('click'); // Trigger a click event on the input element
+}
+
+function doLoad(filename, fileText) {
+    setDefaultTitle();
+    if (filename.endsWith('.chs')) {
+        loadChs(filename, fileText);
+    }
+    else if (filename.endsWith('.fen')) {
+        loadFen(filename, fileText);
+    }
+    else if (filename.endsWith('.pgn')) {
+        loadPgn(filename, fileText);
+    }
+    else {
+        alert("Unsupported file type " + filename);
+    }
 }
 
 function loadChs(filename, chs) {
@@ -1115,6 +1354,14 @@ function allowMove($img, allow) {
     else {
         $img.removeClass("allowMove");
         $img.draggable('disable');
+    }
+}
+
+function clickValidMoves() {
+    validMoves();
+
+    if (session.handle) {
+        fbSendPeer(TYPE_VM_SLIDER, session.handle);
     }
 }
 
@@ -2110,6 +2357,11 @@ function dropAction($this, $img) {
     }
 
     handleValidMove(move, $img);
+
+    if (session.handle) {
+        let payload = JSON.stringify(move);
+        fbSendPeer(TYPE_MOVE, session.handle, payload);
+    }
 }
 
 function handleValidMove(move, $img) {
@@ -2249,7 +2501,7 @@ function initDialogs() {
         title: "Chess Trainer information",
         autoOpen: false, // Keep it hidden initially
         width: 800,
-        height: 650,
+        height: 700,
         modal: true, // Makes the dialog modal (disables interaction with background content)
         position: { my: "center", at: "center", of: "body" } // Center the dialog in <body>
     });

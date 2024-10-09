@@ -158,8 +158,10 @@ button:hover {
     display: flex;
 }
 
-#version {
+#version, #loggedInUser {
     color: gray;
+    display: flex;
+    justify-content: flex-end;
 }
 
 #rowLabels {
@@ -215,6 +217,54 @@ button:hover {
 
 button.arrow:focus {
     outline: none;
+}
+
+#dlgLogin label, #dlgLogin input {
+    font-size: x-large;
+    margin-bottom: 10px;
+}
+
+#dlgLogin {
+    background-color: floralwhite;
+    padding: 10px;
+    border: 3px solid darkgray;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#chatArea {
+    flex-grow: 1;
+    border: 1px solid #000;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    overflow-y: auto;
+    background-color: aliceblue;
+    height: 200px;
+    width: 800px;
+}
+
+#chatSend {
+    font-size: x-large;
+    width: 805px;
+}
+
+.msgEntry, .msgEntry b {
+    display: flex;
+}
+
+.usrHandle {
+    cursor: pointer;
+}
+
+#btnStop {
+    font-family: unset;  /* to show red stop symbol */
+}
+
+.hide {
+    display: none;
 }
 
 /* Table */
