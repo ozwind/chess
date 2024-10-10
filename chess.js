@@ -293,9 +293,13 @@ function remoteSlider() {
 
 function remoteMove(move) {
     applyMove(move);
-    moveList.push(move);
-    tableMsg(move);
-    updateButtonState();
+
+    if (!(move.src.startsWith("discard") || move.dst.startsWith("discard"))) {
+        moveList.push(move);
+        tableMsg(move);
+        updateButtonState();
+    }
+
     cellInfoUpdate();
 }
 
@@ -1160,6 +1164,21 @@ function applyMove(move, fast) {
     if (move.nop) {
         return;
     }
+    else if (move.src.startsWith("discard")) {
+        let $img = $("#" + move.src + " img:last-of-type");
+        let pos = posRowCol(move.dst);
+        let $item = getGridItem(pos[0], pos[1]);
+        $item.append($img);
+        return;
+    }
+    else if (move.dst.startsWith("discard")) {
+        let pos = posRowCol(move.src);
+        let $img = getPiece(pos[0], pos[1]);
+        let $discard = $("#" + move.dst);
+        $discard.append($img);
+        return;
+    }
+
     let src = posRowCol(move.src);
     let dst = posRowCol(move.dst);
 
@@ -2273,6 +2292,9 @@ function toRowCol($item) {
 
 // Convert position, such as c7, to internal row,col, such as 1,2
 function posRowCol(pos) {
+    if (pos.startsWith('discard')) {
+        return [0, 0];
+    }
     let row = 8 - Number(pos.substr(1));
     let col = pos.charCodeAt(0) - 'a'.charCodeAt(0);
     return ([row, col]);
@@ -2286,6 +2308,9 @@ function toLocation(row, col) {
 }
 
 function getLocation($holder) {
+    if ($holder.hasClass('discardPile')) {
+        return $holder[0].id;   // discardBlack or discardWhite
+    }
     let rank = SIZE - Number($holder.attr("row"));             // rank means row in chess notation
     let idx = Number($holder.attr("col"));
     let file = String.fromCharCode('a'.charCodeAt(0) + idx);   // file means column in chess notation
@@ -2359,11 +2384,6 @@ function dropAction($this, $img) {
     }
 
     handleValidMove(move, $img);
-
-    if (session.handle) {
-        let payload = JSON.stringify(move);
-        fbSendPeer(TYPE_MOVE, session.handle, payload);
-    }
 }
 
 function handleValidMove(move, $img) {
@@ -2387,7 +2407,18 @@ function handleValidMove(move, $img) {
         }
         else {
             movingPiece(move);
+            sendMove(move);
         }
+    }
+    else {
+        sendMove(move);
+    }
+}
+
+function sendMove(move) {
+    if (session.handle) {
+        let payload = JSON.stringify(move);
+        fbSendPeer(TYPE_MOVE, session.handle, payload);
     }
 }
 
@@ -2413,6 +2444,7 @@ function promoteDialog(html, move, $img) {
         $(PROMOTE).dialog("close");
         handleCheckAndMate(move);
         movingPiece(move);
+        sendMove(move);
     });
     $promote.dialog("open");
 }
