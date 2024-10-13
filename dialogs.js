@@ -25,12 +25,13 @@ Light blue highlight: legal squares that the hover piece may move to.
 - Open (supporting chs, FEN, and PGN formats)
 - Clear removes all moves
 - Login/logout button for multiplayer
-- Stop ends session (only shows when two players are connected)
-- Info shows this information
 - Rewind undo back to start
+- Flip flips the chessboard
 - Back undo move
 - Forward next move
 - Fast forward applies all moves until the end
+- Info shows this information
+- Stop ends session (only shows when two players are connected)
 - Legal-moves only button; when disabled, pieces may be placed anywhere
 </p>
 `;

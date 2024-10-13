@@ -49,6 +49,7 @@
                  Load PGN files.  Promotion is currently not supported.
     2024-Oct-06: Add rewind and fast forward buttons.
     2024-Oct-09: Connect with other users, chat, login/out, clear moves button
+    2024-Oct-13: Flip chessboard ability added
 **/
 
 const SIZE = 8;    // Chessboard rows and columns
@@ -68,6 +69,8 @@ const LOGGEDINUSER = "#loggedInUser";
 const CHATTING = "#chatting";
 const CHAT_AREA = "#chatArea";
 const CHAT_SEND = "#chatSend";
+const ROW_LABEL = "rowLabel";
+const CELL_COLOR = "off-white";
 
 let debounceTimer;
 let fenStatus = {}; // used when FEN file is loaded to remember castle and en passant
@@ -81,7 +84,7 @@ function init() {
     initLabels();
     loadGrid(initGrid());
     initDialogs();
-    fbInit({online, loggedIn, userState, receiveMessage});
+    fbInit({online, userState, receiveMessage});
 
 
     $("#save").on('click', function() {
@@ -109,6 +112,10 @@ function init() {
 
     $(STOP).click(function() {
         stopSession();
+    });
+
+    $("#flip").on('click', function() {
+        flipChessboard();
     });
 
     $("#info").on('click', function() {
@@ -213,21 +220,18 @@ function online(map) {
     }
 }
 
-function loggedIn(user) {
-    let text = user ? user.handle + " (" + user.email + ")" : "";
-    $(LOGGEDINUSER).text(text);
-}
-
 function userState(user) {
     if (user) {
         fbShowButton(LOGIN, false);
         fbShowButton(LOGOUT, true);
         $(CHATTING).removeClass("hide");
+        $(LOGGEDINUSER).text(user.handle + " (" + user.email + ")");
     }
     else {
         fbShowButton(LOGIN, true);
         fbShowButton(LOGOUT, false);
         $(CHATTING).addClass("hide");
+        $(LOGGEDINUSER).text("");
     }
 }
 
@@ -420,7 +424,7 @@ function initBoard() {
         for (let col = 0; col < SIZE; col++) {
             let $cell = $("<div class='square'></div>");
             if (offWhite) {
-                $cell.addClass('off-white');
+                $cell.addClass(CELL_COLOR);
             }
             $board.append($cell);
             offWhite = !offWhite;            
@@ -432,7 +436,7 @@ function initLabels() {
     let $rowLabels = $("#rowLabels");
 
     for (var row = SIZE; row > 0; row--) {
-        let $row = $("<div class='rowLabel'></div>");
+        let $row = $("<div class='" + ROW_LABEL + "'></div>");
         $row.text(row);
         $rowLabels.append($row);
     }
@@ -445,6 +449,69 @@ function initLabels() {
         $col.text(lbl);
         $colLabels.append($col);
     }
+}
+
+function boardFlipped() {
+    let num = Number($("." + ROW_LABEL).first().text());
+    return num === 1;
+}
+
+function flipChessboard() {
+    let $imgs = $(".grid-item img");
+
+    // Flip board piece positions:
+    for (let i = 0; i < $imgs.length; i++) {
+        let $img = $($imgs[i]);
+        let val = $img.attr("value");
+        let player = getPlayer(val);
+        let $item = $img.parent();
+        let pos = toRowCol($item);
+        let sRow = SIZE - pos[0] - 1;
+        let $sItem = getGridItem(sRow, pos[1]);
+        $sItem.append($img);
+    }
+
+    // Flip chessboard colored cells
+    let $cells = $("#chess-board div");
+    let showColor = !boardFlipped();
+    for (let i = 0; i < $cells.length; i++) {
+        let $cell = $($cells[i]);
+        if (showColor) {
+            $cell.addClass(CELL_COLOR);            
+        }
+        else {
+            $cell.removeClass(CELL_COLOR);
+        }
+        if ((i % SIZE) < (SIZE - 1)) {
+            showColor = !showColor;
+        }
+    }
+
+    // Flip info text within each cell
+    let $infos = $(".info");
+    for (let i = 0; i < $infos.length; i++) {
+        let $info = $($infos[i]);
+        let $elems = $info.children();
+        $info.append($elems.get().reverse());   // reverse order and append
+    }
+
+    // Flip rank row labels on left side of chessboard
+    let $lbls = $("." + ROW_LABEL);
+    if (boardFlipped()) {
+        for (let i = 0; i < SIZE; i++) {
+            $($lbls[i]).text(SIZE - i);
+        }
+    }
+    else {
+        for (let i = 0; i < SIZE; i++) {
+            $($lbls[i]).text(i + 1);
+        }        
+    }
+
+    // Flip discard piles:
+    let $right = $("#rightSide");
+    var $elems = $right.children();
+    $right.append($elems.get().reverse());   // reverse order and append
 }
 
 function updateStarting() {
@@ -494,11 +561,6 @@ function initStarting() {
 }
 
 function initGrid() {
-    const HEADER_HEIGHT = parseInt($('body').css('margin-top')) + $('#header').outerHeight(true);
-    const MARGIN_LEFT = 20;
-    const OFFSET = 100;
-    let top = HEADER_HEIGHT;
-    let left = MARGIN_LEFT;
     let $grid = $('#grid');
     let $info = $(CHESS_INFO);
 
@@ -510,28 +572,16 @@ function initGrid() {
         let $item = $('<div class="grid-item holder"></div>');
         $item.attr('row', row);
         $item.attr('col', col);
-        $item.css('top', top + 'px');
-        $item.css('left', left + 'px');
         $grid.append($item);
 
         let $div = $("<div>");
         $div.addClass("info");
         $div.attr('row', row);
         $div.attr('col', col);
-        $div.css('top', top + 'px');
-        $div.css('left', left + 'px');
         initInfo($div, "B");  // Black
         initInfo($div, "T");  // Threat
         initInfo($div, "W");  // White
         $info.append($div);
-
-        if ((i + 1) % SIZE === 0) {
-            left = MARGIN_LEFT;
-            top += OFFSET;
-        }
-        else {
-            left += OFFSET;
-        }
     }
 
     return starting;
@@ -574,6 +624,18 @@ function loadGrid(data) {
     $(".discardPile").empty();
     clearMoves();
     fenStatus = {};
+
+    if (boardFlipped()) {
+        for (let i = 0; i < SIZE / 2; i++) {
+            for (let j = 0; j < SIZE; j++) {
+                let idx1 = i * SIZE + j;
+                let idx2 = (SIZE - i - 1) * SIZE + j;
+                let temp = data.board[idx1];
+                data.board[idx1] = data.board[idx2];
+                data.board[idx2] = temp;
+            }
+        }
+    }
 
     for (var i = 0; i < data.board.length; i++) {
         let cell = data.board[i];
@@ -1195,9 +1257,9 @@ function applyMove(move, fast) {
         $discard.append($img);
     }
     else if (move.castle) {
-        let row = "B" === move.player ? 0 : 7;
         let fromKing = posRowCol(move.src);
         let toKing = posRowCol(move.dst);
+        let row = fromKing[0];
         let fromRook = "left" === move.rook ? [row, 0] : [row, 7];
         let toRook = "left" === move.rook ? [row, 3] : [row, 5];
         movePiece(fromKing, toKing, fast);
@@ -1510,8 +1572,9 @@ function playerCanMove(player) {
 
 function pawnAttackMoves(row, col, val, highlights) {
     let moves = [];
+    let pawns = boardFlipped() ? ["p","P"] : ["P","p"];
 
-    if ("P" === val && row < (SIZE - 1)) {  // black pawn
+    if (pawns[0] === val && row < (SIZE - 1)) {  // Pawn player1
         if (col > 0) {
             moves.push([row + 1, col - 1]);
         }
@@ -1519,7 +1582,7 @@ function pawnAttackMoves(row, col, val, highlights) {
             moves.push([row + 1, col + 1]);
         }
     }
-    else if ("p" === val && row > 0) {      // white pawn
+    else if (pawns[1] === val && row > 0) {      // Pawn player2
         if (col > 0) {
             moves.push([row - 1, col - 1]);
         }
@@ -1790,7 +1853,8 @@ function isKingCheck(val) {
 }
 
 function pawnValidMoves(row, col, val, highlights) {
-    if ("P" === val) {      // Pawn player1
+    let pawns = boardFlipped() ? ["p","P"] : ["P","p"];
+    if (pawns[0] === val) {      // Pawn player1
         let limit = (row === 1) ? row + 3 : row + 2;
         for (var r = row + 1; r < SIZE && r < limit; r++) {
             if (hasPiece(r, col)) {
@@ -1805,7 +1869,7 @@ function pawnValidMoves(row, col, val, highlights) {
         let moves = [[1, 1], [1, -1]];
         captureCheck(moves, row, col, val, highlights);
     }
-    else if ("p" === val) {  // Pawn player2
+    else if (pawns[1] === val) {  // Pawn player2
         let limit = (row === 6) ? row - 3 : row - 2;
         for (var r = row - 1; r >= 0 && r > limit; r--) {
             if (hasPiece(r, col)) {
@@ -1831,12 +1895,20 @@ function pawnEnPassantValidMoves(row, col, val, highlights) {
     let prevPlayer = (thisPlayer === "B") ? "W" : "B";
     let enPassRow = (thisPlayer === "B") ? 4 : 3;
 
+    if (boardFlipped()) {
+        enPassRow = (thisPlayer === "B") ? 3 : 4;
+    }
+
     if (enPassRow === row  && (prevMove = enPassantMove(prevPlayer))) {
         let mCol = prevMove.dst.charCodeAt(0) - 'a'.charCodeAt(0);
         let delta = Math.abs(col - mCol);  // Check for enemy pawns immediately left or right
         if (delta === 1) {
             let hRow = (thisPlayer === "B") ? 5 : 2;
             let $item = getGridItem(row, mCol);
+
+            if (boardFlipped()) {
+                hRow = (thisPlayer === "B") ? 2 : 5;
+            }
 
             highlights.push([hRow, mCol]);
             attacks.push([row, mCol]);
@@ -2049,7 +2121,11 @@ function getCastles(row, col, val) {
     let sCol = 4;                              // Starting col
     let rooks = rooksNotMoved(player);
     let castles = [];
-    
+
+    if (boardFlipped()) {
+        sRow = (player === "B") ? 7 : 0;
+    }
+
     if (notMoved(player, piece) && row === sRow && col === sCol && rooks.length > 0) {
 
         for (let i = 0; i < rooks.length; i++) {
@@ -2295,7 +2371,8 @@ function posRowCol(pos) {
     if (pos.startsWith('discard')) {
         return [0, 0];
     }
-    let row = 8 - Number(pos.substr(1));
+    let num = Number(pos.substr(1));
+    let row = boardFlipped() ? num - 1 : SIZE - num;
     let col = pos.charCodeAt(0) - 'a'.charCodeAt(0);
     return ([row, col]);
 }
@@ -2303,7 +2380,7 @@ function posRowCol(pos) {
 // Converts interal row/col to external form, such as c7
 function toLocation(row, col) {
     let file = String.fromCharCode('a'.charCodeAt(0) + col);   // file means column in chess notation
-    let rank = SIZE - row;                                     // rank means row in chess notation
+    let rank = boardFlipped() ? row + 1 : SIZE - row;          // rank means row in chess notation
     return file + rank;
 }
 
@@ -2311,7 +2388,8 @@ function getLocation($holder) {
     if ($holder.hasClass('discardPile')) {
         return $holder[0].id;   // discardBlack or discardWhite
     }
-    let rank = SIZE - Number($holder.attr("row"));             // rank means row in chess notation
+    let num = Number($holder.attr("row"));
+    let rank = boardFlipped() ? num + 1 : SIZE - num;          // rank means row in chess notation
     let idx = Number($holder.attr("col"));
     let file = String.fromCharCode('a'.charCodeAt(0) + idx);   // file means column in chess notation
 
@@ -2535,7 +2613,7 @@ function initDialogs() {
         title: "Chess Trainer information",
         autoOpen: false, // Keep it hidden initially
         width: 800,
-        height: 700,
+        height: 720,
         modal: true, // Makes the dialog modal (disables interaction with background content)
         position: { my: "center", at: "center", of: "body" } // Center the dialog in <body>
     });

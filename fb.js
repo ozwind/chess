@@ -1,3 +1,11 @@
+/**
+    Firebase input/output.
+    Allows login, logout, and messaging between users.
+    The firebase server, https://firebase.google.com/, provides ability to login, logout, and
+    message between users.
+    Functions that begin with letters 'fb' are meant to be called by other .js files.
+    Call fbInit first to initialize access to Firebase.
+**/
 const firebaseConfig = {
     apiKey: "AIzaSyCCUz89sbc1i1rJctu5cW5GKtVdoZiymIU",
     authDomain: "chat-6eb4f.firebaseapp.com",
@@ -43,6 +51,11 @@ let fbUserMap = {};
 let userLoggedIn;
 let cbMap = {};
 
+// Argument map should contain: {online, userState, receiveMessage}
+// where each property is a function called by code in this fb.js file.
+// online: is sent a map of users, where the key is the user's email address
+// userState: is called each time a user's on-line status changes
+// receiveMessage: is called when messages are received from other users
 async function fbInit(map) {
     initLoginDialog();
     initJoinDialog();
@@ -125,7 +138,21 @@ function fbSend(text, toHandle, isJson) {
     messagesRef.push(msg);
 }
 
+function setUserOffline() {
+    if (userLoggedIn) {
+        const userStatusRef = database.ref(USERS + '/' + userLoggedIn.uid);
+        const isOffline = {
+            online: false,
+            email: userLoggedIn.email,
+            handle: userLoggedIn.handle,
+            last_changed: firebase.database.ServerValue.TIMESTAMP
+        };
+        userStatusRef.set(isOffline);
+    }
+}
+
 function fbUserLogout() {
+    setUserOffline();
     auth.signOut()
     .then(() => {
         //console.log("User signed out");
@@ -282,10 +309,7 @@ async function onAuthStateChanged(user) {
             last_changed: firebase.database.ServerValue.TIMESTAMP
         };
 
-        if (cbMap.loggedIn) {
-            user.handle = handle;
-            cbMap.loggedIn(user);
-        }
+        user.handle = handle;
         userStatusRef.set(isOnline);
         userStatusRef.onDisconnect().set(isOffline);
         window.addEventListener('beforeunload', () => {
@@ -293,19 +317,7 @@ async function onAuthStateChanged(user) {
         });
     }
     else {
-        if (cbMap.loggedIn) {
-            cbMap.loggedIn();
-        }
-        if (userLoggedIn) {
-            const userStatusRef = database.ref(USERS + '/' + userLoggedIn.uid);
-            const isOffline = {
-                online: false,
-                email: userLoggedIn.email,
-                handle: userLoggedIn.handle,
-                last_changed: firebase.database.ServerValue.TIMESTAMP
-            };
-            userStatusRef.set(isOffline);
-        }
+        setUserOffline();
     }
 
     if (cbMap.userState) {
