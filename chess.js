@@ -50,6 +50,7 @@
     2024-Oct-06: Add rewind and fast forward buttons.
     2024-Oct-09: Connect with other users, chat, login/out, clear moves button
     2024-Oct-13: Flip chessboard ability added
+    2024-Oct-14: On join, pass piece positions to synchronize chessboard
 **/
 
 const SIZE = 8;    // Chessboard rows and columns
@@ -85,7 +86,6 @@ function init() {
     loadGrid(initGrid());
     initDialogs();
     fbInit({online, userState, receiveMessage});
-
 
     $("#save").on('click', function() {
         save();
@@ -184,7 +184,9 @@ function requestJoin(toHandle) {
             if (entry.online) {
                 let type = TYPE_JOIN;
                 let msg = handle + " invites you to join";
-                let cmd = {type, msg, handle};
+                let onlyValid = onlyValidMoves();
+                let join = {starting, moveList, moveRedo, onlyValid};
+                let cmd = {type, msg, handle, join};
                 let json = JSON.stringify(cmd);
                 let confirmed = confirm("Invite " + toHandle + " to join?");
                 if (confirmed) {
@@ -315,6 +317,8 @@ function addMessage(me, handle, text) {
     let $div = $("<div class='msgEntry'>");
     $div.html(msg);
     $text.append($div);
+    $text.scrollTop($text[0].scrollHeight);
+
 }
 
 function clear() {

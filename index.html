@@ -3,10 +3,18 @@
 
 <head>
     <!-- https://www.favicon.cc/ -->
-    <link rel="shortcut icon" type="image/x-icon" href="icons/chess.ico">
+    <link id="favicon" rel="icon" type="image/x-icon" href="icons/chess.ico">
+    <script>
+        // Fix Firefox bug where it incorrectly cycles showing .png images, instead of .ico
+        if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            var favicon = document.getElementById('favicon');
+            if (favicon) {
+                favicon.setAttribute('rel', 'nofollow');  // make firefox not recognize attribute
+            }
+        }
+    </script>
     <meta charset="utf-8">
     <title>Chess Trainer</title>
-
     <link rel="stylesheet" href="chess.css">
     <link rel="stylesheet" href="sliders.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
@@ -52,7 +60,7 @@
             </div>
         </div>
         <div>
-            <div id="version">2024-Oct-13</div>
+            <div id="version">2024-Oct-14</div>
             <div id="loggedInUser"></div>
         </div>
     </div>
@@ -86,11 +94,11 @@
     </div>
     <div id="dlgLogin">
         <label for="handle">Handle:</label>
-        <input type="text" name="handle" id="handle" class="login-input" required>
+        <input type="text" name="handle" id="handle" class="login-input" placeholder="Unique username" required>
         <label for="email">Email address:</label>
         <input type="email" name="email" id="email" class="login-input" autocomplete="username" required>
         <label for="password">Password:</label>
-        <input type="password" name="password" id="password" class="login-input" autocomplete="current-password" required>
+        <input type="password" name="password" id="password" class="login-input" autocomplete="current-password" placeholder="6 or more characters" required>
     </div>
     <div id="dlgJoin">
         <p id="msgJoin"></p>

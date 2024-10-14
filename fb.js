@@ -191,13 +191,26 @@ function fbShowButton(name, show) {
 function fbShowLoginDialog() {
     let usr = fbGetUserStore();
 
+    $dlgLogin.dialog('open');
+
     if (usr) {
-        $(HANDLE).val(usr.handle);
-        $(EMAIL).val(usr.email);
-        $(PWD).focus();               // focus on password
+        let $handle = $(HANDLE);
+        let $email = $(EMAIL);
+        let $pwd = $(PWD);
+        $handle.val(usr.handle);
+        $email.val(usr.email);
+
+        if (usr.handle.length < 1) {
+            $handle.focus();
+        }
+        else if (usr.email.length < 1) {
+            $email.focus();
+        }
+        else {
+            $pwd.focus();
+        }
     }
 
-    $dlgLogin.dialog('open');
     validateLoginOkButton();
 }
 
@@ -205,6 +218,7 @@ function fbShowJoinDialog(data) {
     let $msg = $(MSG_JOIN);
     $msg.text(data.msg);
     $msg.attr("handle", data.handle);
+    session.join = data.join;
 
     $(DLG_JOIN).dialog('open');
 }
@@ -253,11 +267,7 @@ function initJoinDialog() {
         modal: true,     // Enable modal behavior
         buttons: {
             Accept: function() {
-                let handle = getJoinHandle();
-                fbSendPeer(TYPE_ACCEPT, handle);
-                fbShowButton(STOP, true);
-                session.handle = handle;
-                $dlg.dialog('close');
+                joinAccept($dlg);
             },
             Decline: function() {
                 fbSendPeer(TYPE_DECLINE, getJoinHandle());
@@ -267,6 +277,30 @@ function initJoinDialog() {
     });
 
     hideDlgTitlebar($dlg);
+}
+
+function joinAccept($dlg) {
+    let handle = getJoinHandle();
+    fbSendPeer(TYPE_ACCEPT, handle);
+    fbShowButton(STOP, true);
+    session.handle = handle;
+    $dlg.dialog('close');
+
+    let join = session.join;
+    moveList = join.moveList;
+    moveRedo = join.moveRedo;
+    starting = join.starting;
+    loadGrid(starting);
+    setValidMoves(join.onlyValid);
+
+    for (let i = 0; i < moveList.length; i++) {
+        let move = moveList[i];
+        applyMove(move, true);   // true means fast, without animation
+        tableMsg(move);
+    }
+
+    updateButtonState();
+    cellInfoUpdate();
 }
 
 function getJoinHandle() {
@@ -423,7 +457,7 @@ function validateLoginOkButton() {
     const email = $(EMAIL).val().trim();
     const password = $(PWD).val().trim();
 
-    btn.prop('disabled', handle.length < 1 || email.length < 1 || password.length < 1);
+    btn.prop('disabled', handle.length < 1 || email.length < 1 || password.length < 6);
 }
 
 function closeLoginDialog() {
