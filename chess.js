@@ -51,6 +51,7 @@
     2024-Oct-09: Connect with other users, chat, login/out, clear moves button
     2024-Oct-13: Flip chessboard ability added
     2024-Oct-14: On join, pass piece positions to synchronize chessboard
+    2024-Oct-15: On piece drop evaluate if legal, and if so allow drop, otherwise move piece back.
 **/
 
 const SIZE = 8;    // Chessboard rows and columns
@@ -1402,25 +1403,41 @@ function overPiece($img) {
         let val = $img.attr('value');
         let player = getPlayer(val);
         let $item = getGridItem(row, col);
-        $item.addClass("hover");
         showValidMoves(row, col, val, true);  // true = updateInfo
         showInfo(row, col, ["B", "W"]);
+        $img.attr("title", "");
 
+        let allow = true;
+        let noDrop = true;
+        let turn = playerTurn();
+        let side = isWhite($img) ? "W" : "B";
         if (onlyValidMoves()) {
-            let turn = playerTurn();
-            let player = getPlayer(val);
-            let allow = (turn === player) && !$img.parent().hasClass("discardPile");
-            if (moveList.length > 0) {
-                let move = moveList[moveList.length - 1];
-                if (move.win) {
-                    allow = false;
-                }
+            if ($img.parent().hasClass("discardPile")) {
+                allow = false;
             }
-            allowMove($img, allow);
+            else if (moveList.length > 0 && moveList[moveList.length - 1].win) {
+                allow = false;
+            }
+            else if (side !== turn) {
+                let player = "B" === turn ? "Black" : "White";
+                $img.attr("title", player + " player turn");
+            }
+            else {
+                noDrop = false;
+            }
         }
         else {
-            allowMove($img, true);
+            noDrop = false;
         }
+
+        if (noDrop) {
+            $item.addClass("hoverNoDrop");
+        }
+        else {
+            $item.addClass("hover");
+        }
+
+        allowMove($img, allow);
     }
 }
 
@@ -2307,7 +2324,7 @@ function getPiece(row, col) {
 }
 
 function clearValidMoves() {
-    $(".grid-item").removeClass('highlight hover');
+    $(".grid-item").removeClass('highlight hover hoverNoDrop');
     $(".info span").removeClass('showInfo');
     $(".holder img").removeClass("allowMove");
 }
@@ -2338,15 +2355,26 @@ function isDroppable($this, $img) {
     else if ($this[0].id === $img.parent()[0].id) {
         return false;
     }
-    else if ('discardWhite' === id && isWhite($img)) {
-        return true;
-    }
-    else if ('discardBlack' === id && !isWhite($img)) {
-        return true;
+    else if ($this.hasClass('discardPile')) {
+        if (onlyValidMoves()) {
+            return false;
+        }
+        else if ('discardWhite' === id && isWhite($img)) {
+            return true;
+        }
+        else if ('discardBlack' === id && !isWhite($img)) {
+            return true;
+        }
     }
 }
 
 function isValidMove($img, $dst) {
+    let side = isWhite($img) ? "W" : "B";
+
+    if (side !== playerTurn()) {
+        return false;  // not your turn!
+    }
+
     let val = $img.attr("value");
     let pos = toRowCol($img.parent());
     let highlights = showValidMoves(pos[0], pos[1], val);

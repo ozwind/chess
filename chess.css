@@ -104,6 +104,10 @@ img {
     background-color: lightgreen;
 }
 
+.hoverNoDrop {
+    background-color: orange;
+}
+
 .active, .discardPile.active {
     border: 3px solid green;
 }
